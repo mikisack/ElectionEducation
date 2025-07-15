@@ -306,6 +306,109 @@
             75% { transform: rotate(5deg); }
         }
 
+        .countdown-container {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(78, 205, 196, 0.1));
+            border: 2px solid var(--accent-color);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .countdown-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .countdown-title {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .countdown-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 1rem;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .countdown-item {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            transition: transform 0.3s ease;
+        }
+
+        .countdown-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .countdown-number {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+            animation: pulse 2s infinite;
+        }
+
+        .countdown-label {
+            font-size: 0.8rem;
+            opacity: 0.9;
+            margin-top: 0.5rem;
+        }
+
+        .countdown-message {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        .voting-reminder {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(139, 195, 74, 0.1));
+            border: 2px solid var(--success-color);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .countdown-container {
+                padding: 1.5rem;
+                margin: 1rem 0;
+            }
+            
+            .countdown-title {
+                font-size: 1.5rem;
+            }
+            
+            .countdown-number {
+                font-size: 1.5rem;
+            }
+            
+            .countdown-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.8rem;
+            }
+        }
+
         .election-types {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -511,6 +614,35 @@
             <section id="overview" class="section">
                 <h2>🏛️ 参議院選挙って何？</h2>
                 <p>簡単に言うと、国会の「参議院」という部屋で働く政治家さんたちを選ぶ選挙です！参議院の議員さんは6年間お仕事をして、3年ごとに約半分の人が入れ替わります。まるで学校のクラス替えみたいですね 😊</p>
+                
+                <div class="countdown-container">
+                    <h3 class="countdown-title">⏰ 次回の参議院選挙まで</h3>
+                    <div class="countdown-grid">
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="days">--</span>
+                            <span class="countdown-label">日</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="hours">--</span>
+                            <span class="countdown-label">時間</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="minutes">--</span>
+                            <span class="countdown-label">分</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="seconds">--</span>
+                            <span class="countdown-label">秒</span>
+                        </div>
+                    </div>
+                    <div class="countdown-message" id="countdown-message">
+                        投票日: <span id="election-date">2025年7月20日（日）</span>
+                    </div>
+                    <div class="voting-reminder" id="voting-reminder" style="display: none;">
+                        🗳️ <strong>今日は投票日です！</strong><br>
+                        午前7時〜午後8時まで投票できます
+                    </div>
+                </div>
                 
                 <div class="highlight-box">
                     <strong>🎯 ここがポイント！</strong>
@@ -950,6 +1082,66 @@
                 }
             });
         });
+
+        // Countdown functionality
+        function updateCountdown() {
+            // 2025年7月20日の午前7時（投票開始時間）に設定
+            const electionDate = new Date('2025-07-20T07:00:00+09:00');
+            const now = new Date();
+            const timeDiff = electionDate - now;
+
+            if (timeDiff > 0) {
+                const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+                document.getElementById('days').textContent = days.toString().padStart(2, '0');
+                document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+                document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+                document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+
+                // メッセージの更新
+                if (days > 30) {
+                    document.getElementById('countdown-message').innerHTML = 
+                        '投票日: <span id="election-date">2025年7月20日（日）</span><br>しっかり準備して投票に備えましょう！ 📚';
+                } else if (days > 7) {
+                    document.getElementById('countdown-message').innerHTML = 
+                        '投票日: <span id="election-date">2025年7月20日（日）</span><br>もうすぐです！投票の準備はできていますか？ 🗳️';
+                } else if (days > 1) {
+                    document.getElementById('countdown-message').innerHTML = 
+                        '投票日: <span id="election-date">2025年7月20日（日）</span><br>いよいよ来週！投票所入場券をチェックしておきましょう 📋';
+                } else if (days === 1) {
+                    document.getElementById('countdown-message').innerHTML = 
+                        '投票日: <span id="election-date">2025年7月20日（日）</span><br>明日が投票日です！忘れずに投票に行きましょう 🎯';
+                } else {
+                    document.getElementById('countdown-message').innerHTML = 
+                        '投票日: <span id="election-date">2025年7月20日（日）</span><br>今日が投票日です！';
+                }
+            } else {
+                // 投票日が過ぎた場合
+                const electionEndTime = new Date('2025-07-20T20:00:00+09:00');
+                if (now < electionEndTime) {
+                    // 投票日当日（投票時間中）
+                    document.getElementById('voting-reminder').style.display = 'block';
+                    document.querySelector('.countdown-grid').style.display = 'none';
+                    document.getElementById('countdown-message').innerHTML = 
+                        '🗳️ <strong>今日は投票日です！</strong><br>午後8時まで投票できます';
+                } else {
+                    // 投票日終了後
+                    document.getElementById('days').textContent = '00';
+                    document.getElementById('hours').textContent = '00';
+                    document.getElementById('minutes').textContent = '00';
+                    document.getElementById('seconds').textContent = '00';
+                    document.getElementById('countdown-message').innerHTML = 
+                        '投票日: <span id="election-date">2025年7月20日（日）</span><br>投票お疲れさまでした！開票結果をお待ちください 📊';
+                }
+            }
+        }
+
+        // 初回実行とタイマー設定
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
     </script>
 </body>
 </html>

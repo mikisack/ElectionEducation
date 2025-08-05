@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noggle画像重ね合わせツール</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px;
+            background-color: #f5f5f5;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+        }
+        
+        .container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .upload-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .upload-section.dragover {
+            border-color: #007cba;
+            background-color: #f0f8ff;
+        }
+        
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        
+        .preview-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .preview-container {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .preview-container h3 {
+            margin-bottom: 15px;
+            color: #555;
+        }
+        
+        .image-preview {
+            width: 100%;
+            max-width: 300px;
+            max-height: 300px;
+            object-fit: contain;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .canvas-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        #canvas {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            max-width: 100%;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .preview-section {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .buttons button {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .buttons {
+                flex-direction: row;
+                justify-content: center;
+                gap: 15px;
+            }
+            
+            .buttons button {
+                width: auto;
+                min-width: 120px;
+            }
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        
+        input[type="number"] {
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        
+        input[type="color"] {
+            width: 50px;
+            height: 35px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        input[type="checkbox"] {
+            cursor: pointer;
+        }
+        
+        .buttons {
+            text-align: center;
+            gap: 15px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            user-select: none;
+        }
+        
+        .primary-btn {
+            background-color: #007cba;
+            color: white;
+        }
+        
+        .primary-btn:hover {
+            background-color: #005a8b;
+        }
+        
+        .secondary-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .secondary-btn:hover {
+            background-color: #545b62;
+        }
+        
+        .success-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .success-btn:hover {
+            background-color: #1e7e34;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .value-display {
+            font-size: 14px;
+            color: #777;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🖼️ Noggle画像重ね合わせツール</h1>
+        
+        <div class="upload-section" id="uploadSection">
+            <p>📸 背景画像をアップロードしてください</p>
+            <input type="file" id="backgroundFile" accept="image/*">
+            <p>またはファイルをここにドラッグ&ドロップ</p>
+        </div>
+        
+        <div class="preview-section">
+            <div class="preview-container">
+                <h3>背景画像</h3>
+                <img id="backgroundPreview" class="image-preview hidden" alt="背景画像プレビュー">
+            </div>
+            <div class="preview-container">
+                <h3>Noggleロゴ</h3>
+                <img id="nogglePreview" class="image-preview" src="2025-05-06_09.34.10.png" alt="Noggleロゴ">
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+        </div>
+        
+        <div class="controls hidden" id="controls">
+            <div class="control-group">
+                <label for="noggleSize">ロゴサイズ: <span class="value-display" id="sizeValue">100px</span></label>
+                <input type="range" id="noggleSize" min="20" max="300" value="100">
+            </div>
+            
+            <div class="control-group">
+                <label for="noggleX">X位置: <span class="value-display" id="xValue">50</span></label>
+                <input type="range" id="noggleX" min="0" max="100" value="50">
+            </div>
+            
+            <div class="control-group">
+                <label for="noggleY">Y位置: <span class="value-display" id="yValue">50</span></label>
+                <input type="range" id="noggleY" min="0" max="100" value="50">
+            </div>
+            
+            <div class="control-group">
+                <label for="noggleOpacity">透明度: <span class="value-display" id="opacityValue">100%</span></label>
+                <input type="range" id="noggleOpacity" min="0" max="100" value="100">
+            </div>
+            
+            <div class="control-group">
+                <label for="noggleColor">色調整:</label>
+                <input type="color" id="noggleColor" value="#8B2635">
+            </div>
+            
+            <div class="control-group">
+                <label for="noggleRotation">回転角度: <span class="value-display" id="rotationValue">0°</span></label>
+                <input type="range" id="noggleRotation" min="0" max="360" value="0">
+            </div>
+            
+            <div class="control-group">
+                <label>反転:</label>
+                <div style="display: flex; gap: 15px; margin-top: 8px; flex-wrap: wrap;">
+                    <label style="display: flex; align-items: center; font-weight: normal; cursor: pointer;">
+                        <input type="checkbox" id="flipHorizontal" style="margin-right: 8px; transform: scale(1.2);">
+                        水平反転
+                    </label>
+                    <label style="display: flex; align-items: center; font-weight: normal; cursor: pointer;">
+                        <input type="checkbox" id="flipVertical" style="margin-right: 8px; transform: scale(1.2);">
+                        垂直反転
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <div class="buttons">
+            <button id="resetBtn" class="secondary-btn hidden">リセット</button>
+            <button id="downloadBtn" class="success-btn hidden">画像をダウンロード</button>
+        </div>
+        
+    </div>
+
+    <script>
+        const backgroundFile = document.getElementById('backgroundFile');
+        const backgroundPreview = document.getElementById('backgroundPreview');
+        const nogglePreview = document.getElementById('nogglePreview');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const controls = document.getElementById('controls');
+        const uploadSection = document.getElementById('uploadSection');
+        
+        const noggleSize = document.getElementById('noggleSize');
+        const noggleX = document.getElementById('noggleX');
+        const noggleY = document.getElementById('noggleY');
+        const noggleOpacity = document.getElementById('noggleOpacity');
+        const noggleColor = document.getElementById('noggleColor');
+        const noggleRotation = document.getElementById('noggleRotation');
+        const flipHorizontal = document.getElementById('flipHorizontal');
+        const flipVertical = document.getElementById('flipVertical');
+        
+        const sizeValue = document.getElementById('sizeValue');
+        const xValue = document.getElementById('xValue');
+        const yValue = document.getElementById('yValue');
+        const opacityValue = document.getElementById('opacityValue');
+        const rotationValue = document.getElementById('rotationValue');
+        
+        const resetBtn = document.getElementById('resetBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        
+        let backgroundImg = new Image();
+        let noggleImg = new Image();
+        
+        // 初期化
+        noggleImg.onload = function() {
+            nogglePreview.src = noggleImg.src;
+            nogglePreview.classList.remove('hidden');
+        };
+        noggleImg.onerror = function() {
+            alert('Noggleロゴの読み込みに失敗しました。2025-05-06_09.34.10.pngファイルが存在することを確認してください。');
+        };
+        noggleImg.src = '2025-05-06_09.34.10.png';
+        
+        // ドラッグ&ドロップ機能
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+        
+        backgroundFile.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+        
+        function handleFileUpload(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('画像ファイルを選択してください。');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                backgroundImg.onload = function() {
+                    backgroundPreview.src = backgroundImg.src;
+                    backgroundPreview.classList.remove('hidden');
+                    setupCanvas();
+                    controls.classList.remove('hidden');
+                    resetBtn.classList.remove('hidden');
+                    downloadBtn.classList.remove('hidden');
+                };
+                backgroundImg.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function setupCanvas() {
+            canvas.width = Math.min(backgroundImg.width, 800);
+            canvas.height = (backgroundImg.height * canvas.width) / backgroundImg.width;
+            drawComposite();
+        }
+        
+        function drawComposite() {
+            // 画像がロードされていない場合は何もしない
+            if (!backgroundImg || !backgroundImg.complete || backgroundImg.naturalWidth === 0) {
+                return;
+            }
+            if (!noggleImg || !noggleImg.complete || noggleImg.naturalWidth === 0) {
+                return;
+            }
+            
+            // キャンバスをクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 背景画像を描画
+            ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+            
+            // Noggleロゴのパラメータを取得
+            const size = parseInt(noggleSize.value) || 100;
+            const xPercent = parseInt(noggleX.value) || 50;
+            const yPercent = parseInt(noggleY.value) || 50;
+            const opacity = (parseInt(noggleOpacity.value) || 100) / 100;
+            const rotation = parseInt(noggleRotation.value) || 0;
+            const flipH = flipHorizontal.checked;
+            const flipV = flipVertical.checked;
+            const color = noggleColor.value;
+            
+            // ロゴのサイズを計算
+            const aspectRatio = noggleImg.naturalHeight / noggleImg.naturalWidth;
+            const logoWidth = size;
+            const logoHeight = size * aspectRatio;
+            
+            // 位置を計算
+            const xPos = (xPercent / 100) * (canvas.width - logoWidth);
+            const yPos = (yPercent / 100) * (canvas.height - logoHeight);
+            
+            // 描画用の画像を決定
+            let imageToUse = noggleImg;
+            
+            // 色変更が必要な場合のみ処理（デフォルト色以外）
+            if (color && color !== '#8b2635' && color !== '#8B2635') {
+                try {
+                    const colorCanvas = document.createElement('canvas');
+                    const colorCtx = colorCanvas.getContext('2d');
+                    colorCanvas.width = noggleImg.naturalWidth;
+                    colorCanvas.height = noggleImg.naturalHeight;
+                    
+                    colorCtx.drawImage(noggleImg, 0, 0);
+                    
+                    const imageData = colorCtx.getImageData(0, 0, colorCanvas.width, colorCanvas.height);
+                    const data = imageData.data;
+                    
+                    const hex = color.replace('#', '');
+                    const newR = parseInt(hex.substr(0, 2), 16);
+                    const newG = parseInt(hex.substr(2, 2), 16);
+                    const newB = parseInt(hex.substr(4, 2), 16);
+                    
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+                        const a = data[i + 3];
+                        
+                        // 透明でないピクセルのみ処理
+                        if (a > 50) {
+                            // Noggleの赤いフレーム部分を特定
+                            // 赤色系で、黒や白ではないピクセルを対象
+                            const isRed = r > g && r > b;  // 赤が最も強い
+                            const notTooBlack = r > 50 || g > 50 || b > 50;  // 真っ黒ではない
+                            const notTooWhite = r < 240 && g < 240 && b < 240;  // 真っ白ではない
+                            const hasRedTone = r > 80;  // ある程度の赤みがある
+                            
+                            if (isRed && notTooBlack && notTooWhite && hasRedTone) {
+                                data[i] = newR;
+                                data[i + 1] = newG;
+                                data[i + 2] = newB;
+                            }
+                        }
+                    }
+                    
+                    colorCtx.putImageData(imageData, 0, 0);
+                    imageToUse = colorCanvas;
+                } catch (e) {
+                    imageToUse = noggleImg;
+                }
+            }
+            
+            // ロゴを描画
+            ctx.save();
+            ctx.globalAlpha = opacity;
+            
+            if (rotation !== 0 || flipH || flipV) {
+                // 変換がある場合（回転または反転）
+                const centerX = xPos + logoWidth / 2;
+                const centerY = yPos + logoHeight / 2;
+                ctx.translate(centerX, centerY);
+                ctx.rotate((rotation * Math.PI) / 180);
+                ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+                ctx.drawImage(imageToUse, -logoWidth / 2, -logoHeight / 2, logoWidth, logoHeight);
+            } else {
+                // 変換なしの場合
+                ctx.drawImage(imageToUse, xPos, yPos, logoWidth, logoHeight);
+            }
+            
+            ctx.restore();
+        }
+        
+        // コントロールイベント
+        noggleSize.addEventListener('input', () => {
+            sizeValue.textContent = noggleSize.value + 'px';
+            drawComposite();
+        });
+        
+        noggleX.addEventListener('input', () => {
+            xValue.textContent = noggleX.value;
+            drawComposite();
+        });
+        
+        noggleY.addEventListener('input', () => {
+            yValue.textContent = noggleY.value;
+            drawComposite();
+        });
+        
+        noggleOpacity.addEventListener('input', () => {
+            opacityValue.textContent = noggleOpacity.value + '%';
+            drawComposite();
+        });
+        
+        noggleColor.addEventListener('input', drawComposite);
+        
+        noggleRotation.addEventListener('input', () => {
+            rotationValue.textContent = noggleRotation.value + '°';
+            drawComposite();
+        });
+        
+        flipHorizontal.addEventListener('change', drawComposite);
+        flipVertical.addEventListener('change', drawComposite);
+        
+        // リセット機能
+        resetBtn.addEventListener('click', () => {
+            backgroundFile.value = '';
+            backgroundPreview.classList.add('hidden');
+            canvas.width = 0;
+            canvas.height = 0;
+            controls.classList.add('hidden');
+            resetBtn.classList.add('hidden');
+            downloadBtn.classList.add('hidden');
+            
+            // スライダーをリセット
+            noggleSize.value = 100;
+            noggleX.value = 50;
+            noggleY.value = 50;
+            noggleOpacity.value = 100;
+            noggleColor.value = '#8B2635';
+            noggleRotation.value = 0;
+            flipHorizontal.checked = false;
+            flipVertical.checked = false;
+            sizeValue.textContent = '100px';
+            xValue.textContent = '50';
+            yValue.textContent = '50';
+            opacityValue.textContent = '100%';
+            rotationValue.textContent = '0°';
+        });
+        
+        // ダウンロード機能
+        downloadBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'noggle-overlay-image.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    </script>
+</body>
+</html>
